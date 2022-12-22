@@ -1,0 +1,74 @@
+{
+  "books": [
+    {
+      "id": 0,
+      "name": "Благословение небожителей. Том 3",
+      "author": "Мосян Тунсю",
+      "realese": "2022",
+      "owner": [
+        {
+          "id": 0,
+          "name": "Фролов Дмитрий",
+          "datein": "08.02.2018",
+          "dateout": "02.03.2018"
+        }
+      ],
+      "search_tags": [
+        "Манга"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Мара и Морок",
+      "author": "Арден Ли",
+      "realese": "1928",
+      "owner": [
+        {
+          "id": 0,
+          "name": "Тарасов Максим",
+          "datein": "08.02.2018",
+          "dateout": "02.03.2018"
+        }
+      ],
+      "search_tags": [
+        "Ужасы"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "test",
+      "author": "test author",
+      "owner": "owner",
+      "search_tags": [
+        "fantasy"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "test",
+      "author": "test author",
+      "owner": "owner",
+      "search_tags": [
+        "fantasy"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "test",
+      "author": "test author",
+      "owner": "owner",
+      "search_tags": [
+        "fantasy"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "test",
+      "author": "test author",
+      "owner": "owner",
+      "search_tags": [
+        "fantasy"
+      ]
+    }
+  ]
+}
