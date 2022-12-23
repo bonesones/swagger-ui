@@ -11,9 +11,9 @@ const path = './books.json';
 
 const genres = ["Фантастика", "Научная фантастика", "Приключения", "Романтика", "Драма", "Ужасы"]
 
-const createBookData = function() {
+const createBookData = function(index) {
     return {
-        id: faker.datatype.uuid(),
+        id: index + 1,
         name: faker.music.songName(),
         giveDate: faker.date.past().toLocaleDateString("ru"),
         backDate: faker.date.future().toLocaleDateString("ru"),
@@ -23,7 +23,7 @@ const createBookData = function() {
     }
 }
 
-const users = Array.from({ length: 50 }).map(() => createBookData());
+const users = Array.from({ length: 50 }).map((_, index) => createBookData(index));
 jsonfile.writeFileSync(path, users, { spaces: 2 })
 
 app.get('/api/book', (req, res) => {
@@ -37,8 +37,11 @@ app.get('/api/book', (req, res) => {
 
 app.get('/api/book/:id', (req, res) => {
     const books = jsonfile.readFileSync(path);
-    const book = books.filter(({ id }) => id === req.params.id );
-    res.send(book);
+    const book = books.find(({ id }) => id == req.params.id)
+    return res.status(200).json({
+        success: true,
+        book: book
+    });
 })
 
 app.post('/api/book', urlencodedParser, (req, res) => {
@@ -51,7 +54,6 @@ app.post('/api/book', urlencodedParser, (req, res) => {
         author: req.body.author,
         tags: req.body.tags?.split(', '),
         year: req.body.year
-
     }
 
     books.push(book)
@@ -82,7 +84,8 @@ app.delete('/api/book/:id', (req, res) => {
 
 app.put('/api/book/:id', urlencodedParser, (req, res) => {
     const books = jsonfile.readFileSync(path);
-    const bookIndex = books.findIndex(({ id }) => id === req.params.id);
+    const bookIndex = books.findIndex(({ id }) => id == req.params.id);
+
 
     if(bookIndex === -1) {
         res.send('book not found');
@@ -102,7 +105,10 @@ app.put('/api/book/:id', urlencodedParser, (req, res) => {
     }
 
     jsonfile.writeFileSync(path, books, { spaces: 2 });
-    res.send("Book has been edited");
+    return res.status(200).json({
+        status: "success",
+        message: "book has been edited"
+    })
 
 })
 
