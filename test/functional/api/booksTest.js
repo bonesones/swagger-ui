@@ -69,17 +69,33 @@ describe("/PUT book :id", () => {
         backDate: "30.06.2023",
         author: "Прокл Лыткин",
     }
-    it('should update book by PUT', done => {
+    it('should update book by id', done => {
         chai.request(server)
             .put('/api/book/3')
             .send(book)
             .end((err, res) => {
                 res.should.have.status(200);
-                res.body.should.be.a('object');
+                res.body.should.be.a('object'); 
+                console.log(res)
                 res.body.should.have.property('message').eql("book has been edited")
                 done()
             })
     })
 })
+
+describe("/DELETE book :id", () => {
+    console.log('eestadfawdf')
+    it('should delete book by id', done => {
+        chai.request(server)
+            .delete('/api/book/3')
+            .end((err, res) => {
+                res.should.have.status(200)
+                res.body.should.be.a('object')
+                res.body.should.have.property('message').eql('book has been deleted')
+                done()
+            })
+    })
+})
+
 
 

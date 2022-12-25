@@ -68,7 +68,8 @@ app.post('/api/book', urlencodedParser, (req, res) => {
 
 app.delete('/api/book/:id', (req, res) => {
     const books = jsonfile.readFileSync(path);
-    const bookIndex = books.findIndex(({ id }) => id === req.params.id);
+    const bookIndex = books.findIndex(({ id }) => id == req.params.id);
+
 
     if(bookIndex === -1) {
         res.send('book not found');
@@ -79,7 +80,10 @@ app.delete('/api/book/:id', (req, res) => {
 
     jsonfile.writeFileSync(path, books, { spaces: 2 });
 
-    res.send('book has been deleted');
+    return res.status(200).json({
+        success: true,
+        message: 'book has been deleted'
+    })
 })
 
 app.put('/api/book/:id', urlencodedParser, (req, res) => {
