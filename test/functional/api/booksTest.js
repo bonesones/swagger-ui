@@ -1,7 +1,6 @@
 const chai = require('chai');
 const server = require("../../../index");
 const chaiHttp =  require("chai-http");
-const { resetWatchers } = require('nodemon/lib/monitor/watch');
 const should = chai.should();
 
 chai.use(chaiHttp)
@@ -76,7 +75,6 @@ describe("/PUT book :id", () => {
             .end((err, res) => {
                 res.should.have.status(200);
                 res.body.should.be.a('object'); 
-                console.log(res)
                 res.body.should.have.property('message').eql("book has been edited")
                 done()
             })
@@ -84,7 +82,6 @@ describe("/PUT book :id", () => {
 })
 
 describe("/DELETE book :id", () => {
-    console.log('eestadfawdf')
     it('should delete book by id', done => {
         chai.request(server)
             .delete('/api/book/3')
