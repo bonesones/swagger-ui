@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "username": "test",
+    "password": "$2b$10$/hhriCchhH4zb1AojoqJZO3v.J/qnKY6frCCaJ20TTxD.qm/d0g.K",
+    "email": "test@tmai.lcom",
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzIzMTA4MTEsImV4cCI6MTY3MjMxMTcxMX0.gnghcMa6odS3fnI4dxB_CYQKxgrOUSph4J24PqB0Yk8",
+    "refreshToken": "af8f736b-6249-4b53-a794-d7817a8313a1"
+  }
+]

@@ -1,13 +1,17 @@
-const express = require('express');
-const { faker } = require('@faker-js/faker/locale/ru')
-const jsonfile = require('jsonfile');
-const bodyParser = require('body-parser')
-const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid')
-const { TokenExpiredError } = jwt;
-const dotenv = require('dotenv');
-const urlencodedParser = bodyParser.urlencoded({ extended: false })
- 
+const { json } = require('body-parser');
+const express = require('express'),
+      session = require('express-session'),
+     { faker } = require('@faker-js/faker/locale/ru'),
+     jsonfile = require('jsonfile'),
+     bodyParser = require('body-parser'),
+     jwt = require('jsonwebtoken'),
+     { v4: uuidv4 } = require('uuid'),
+     dotenv = require('dotenv'),
+     auth = require('./middleware/auth'),
+     { refreshTokens } = require('./utils/refreshTokens'),
+     { validateForm } = require('./utils/validateSignUpForm'),
+     bcrypt = require('bcrypt');
+
 dotenv.config()
 process.env.TOKEN_SECRET;
 
@@ -15,76 +19,12 @@ const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
-
-const users = [
-    {
-        username: "test",
-        password: 1111,
-        refreshToken: uuidv4(),
-        expiresIn: undefined
-    }
-]
+app.use(session({
+    secret: process.env.SESSION_KEY,
+    saveUninitialized: true
+}))
 
 const path = './books.json';
-
-const generateAccessToken = function(username) {
-    return jwt.sign({username: username}, process.env.TOKEN_SECRET, {expiresIn: "5s"});
-}
-
-const checkExpiredToken = function(user) {
-    return new Date > user.expiresIn ? true : false;
-}
-
-const refreshAccessToken = function(req, res) {
-    const { refreshToken: requestToken} = req.body;
-
-    if(requestToken === null) {
-        return res.status(403).json({ message: "Refresh Token is required!" });
-    }
-
-    const refreshToken = users.findIndex(({ refreshToken }) => refreshToken === requestToken);
-
-    if(refreshToken === -1) {
-        return res.status(403).json({ message: "Refresh token is not in database!" });
-    }
-
-    const isExpired = checkExpiredToken(users[refreshToken]);
-
-    if(isExpired) {
-        const newToken = generateAccessToken(users[refreshToken].username);
-        users[refreshToken].token = newToken;
-        const date = new Date()
-        users[refreshToken].expiresIn = date.setSeconds(date.getSeconds() + 40)
-
-        return res.status(200).json({
-            message: "token has been updated",
-            token: newToken,
-        })
-    }
-}
-
-const authenticateJWT = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (authHeader) {
-        const token = authHeader.split(' ')[1];
-
-        jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-            if (err) {
-                if(err instanceof TokenExpiredError){
-                    refreshAccessToken(user[0].refreshToken)
-                    return res.sendStatus(401);
-                }
-                return res.sendStatus(403);
-            }
-            req.user = user;
-            next();
-        });
-    } else {
-        res.sendStatus(401);
-    }
-};
-
 
 const createBookData = function(index) {
     const genres = ["Фантастика", "Научная фантастика", "Приключения", "Романтика", "Драма", "Ужасы"]
@@ -102,7 +42,7 @@ const createBookData = function(index) {
 const books = Array.from({ length: 50 }).map((_, index) => createBookData(index));
 jsonfile.writeFileSync(path, books, { spaces: 2 })
 
-app.get('/api/book', authenticateJWT, (req, res) => {
+app.get('/api/book', auth, (req, res) => {
     const books = jsonfile.readFileSync(path);
     
     return res.status(200).json({
@@ -111,24 +51,81 @@ app.get('/api/book', authenticateJWT, (req, res) => {
     })
 })
 
-a
+
+app.post('/signup', validateForm, async (req, res) => {
+    const { username, password, email } = req.body;
+    const salt = 10;
+
+    const genedSalt = await bcrypt.genSalt(salt);
+    const hashedPassword = await bcrypt.hash(password, genedSalt)
+
+    const path = "./models/users.json"
+
+    jsonfile.readFile(path, (err, data) => {
+        if(err) throw err;
+        else {
+            const users = data;
+            users.push({
+                id: data.length + 1,
+                username: username,
+                password: hashedPassword,
+                email: email,
+            })
+
+            jsonfile.writeFile(path, users, { spaces: 2 }, (err) => {
+                if(err) throw err;
+                res.status(200).json({
+                    message: "user added"
+                })
+            })
+        }
+    })
+})
 
 app.post('/login', (req, res) => {
+    const path = "./models/users.json"
+
     const { username: loginUsername, password: loginPassword } = req.body;
-    const user = users.find(({username, password}) => username === loginUsername && password === loginPassword);
+    const users = jsonfile.readFileSync(path);
+    const user = users.find(async (username, password) => { 
+        return username === loginUsername && await bcrypt.compare(loginPassword, password);
+    })
 
     if(user) {
-        const accessToken = generateAccessToken(user.username)
-        res.json({
-            accessToken
+        const accessToken = jwt.sign({username: loginUsername, refreshToken: user.refreshToken}, process.env.TOKEN_SECRET, {expiresIn: "10s"});
+        const refreshToken = uuidv4()
+
+        const users = jsonfile.readFileSync(path);
+        const index = users.findIndex(({username}) => username === loginUsername );
+
+        users[index].accessToken = accessToken;
+        users[index].refreshToken = refreshToken;
+        jsonfile.writeFileSync(path, users, { spaces: 2 })
+    
+        req.session.token = accessToken
+        req.session.refreshToken = refreshToken;
+    
+        return res.status(200).json({
+            token: accessToken,
+            refreshToken: refreshToken
         });
     } else {
-        res.send('Username or password is incorrect')
+        return res.status(403).json({
+            message: 'Username or password is incorrect'
+        })
     }
 
 })
 
-app.get('/api/book/:id', authenticateJWT, (req, res) => {
+app.post('/refresh-tokens', (req, res) => {
+    const { refreshToken } = req.body;
+    const tokens = refreshTokens(refreshToken, users);
+    return res.status(200).json({
+        tokens
+    })
+})
+
+app.get('/api/book/:id', auth, (req, res) => {
     const books = jsonfile.readFileSync(path);
     const book = books.find(({ id }) => id == req.params.id)
     return res.status(200).json({
@@ -137,7 +134,7 @@ app.get('/api/book/:id', authenticateJWT, (req, res) => {
     });
 })
 
-app.post('/api/book', authenticateJWT, (req, res) => {
+app.post('/api/book', auth, (req, res) => {
     const books = jsonfile.readFileSync(path);
     const book = {
         id: faker.datatype.uuid(),
@@ -159,7 +156,7 @@ app.post('/api/book', authenticateJWT, (req, res) => {
     });
 })
 
-app.delete('/api/book/:id', authenticateJWT, (req, res) => {
+app.delete('/api/book/:id', auth, (req, res) => {
     const books = jsonfile.readFileSync(path);
     const bookIndex = books.findIndex(({ id }) => id == req.params.id);
 
@@ -179,7 +176,7 @@ app.delete('/api/book/:id', authenticateJWT, (req, res) => {
     })
 })
 
-app.put('/api/book/:id', authenticateJWT, (req, res) => {
+app.put('/api/book/:id', auth, (req, res) => {
     const books = jsonfile.readFileSync(path);
     const bookIndex = books.findIndex(({ id }) => id == req.params.id);
 
