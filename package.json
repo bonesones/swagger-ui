@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "dev": "nodemon index.js",
     "test": "export NODE_ENV=test || SET \"NODE_ENV=test\" && mocha ./test/functional/api/booksTest.js",
-    "test-watch": "nodemon --exec 'npm test'"
+    "test-watch": "nodemon --exec 'npm test'",
+    "gen": "node ./swagger/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,12 +16,19 @@
     "bcrypt": "^5.1.0",
     "body-parser": "^1.20.1",
     "chai-http": "^4.3.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "expect": "^29.3.1",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "jsonfile": "^6.1.0",
     "jsonwebtoken": "^9.0.0",
+    "lowdb": "^5.1.0",
+    "morgan": "^1.10.0",
+    "nanoid": "^4.0.1",
+    "nodemon": "^2.0.20",
+    "swagger-autogen": "^2.23.0",
+    "swagger-ui-express": "^4.6.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

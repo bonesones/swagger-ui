@@ -1,0 +1,104 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "version": "1.0.0",
+      "title": "My book API",
+      "description": "Book api API"
+    },
+    "host": "localhost:3000",
+    "basePath": "/",
+    "tags": [
+      {
+        "name": "Users",
+        "description": "API for users in the system"
+      }
+    ],
+    "definitions": {
+        "Book": {
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "uniqueItems": true
+                },
+                "name": {
+                    "type": "string"
+                },
+                "giveDate": {
+                    "type": "string"
+                },
+                "backDate": {
+                    "type": "string"
+                },
+                "author": {
+                    "type": "string"
+                }, 
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
+        "Books": {
+            "type": "array",
+            "$ref": "#/definitions/Book"
+        },
+        "Response": {
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "book": {
+                    "$ref": "#/definitions/Book"
+                }
+            }
+        }
+    },
+    "paths": {
+        "/api/book": {
+            "get": {
+                "tags": ["Books"],
+                "summary": "Get all books",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Books"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Books"],
+                "summary": "Add new book",
+                "parameters": [
+                    {
+                        "name": "book",
+                        "in": "body",
+                        "description": "Book to add",
+                        "schema": {
+                            "$ref": "#/definitions/Book"
+                        }
+                    }
+                ],
+                "produces": ["application/json"],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref":"#/definitions/Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "schemes": ["http"],
+    "consumes": ["application/json"],
+    "produces": ["application/json"]
+  }

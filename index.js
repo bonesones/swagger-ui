@@ -12,6 +12,8 @@ const express = require('express'),
      { validateForm } = require('./utils/validateSignUpForm'),
      bcrypt = require('bcrypt');
 
+     
+
 dotenv.config()
 process.env.TOKEN_SECRET;
 
@@ -23,6 +25,10 @@ app.use(session({
     secret: process.env.SESSION_KEY,
     saveUninitialized: true
 }))
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./docs/swagger.json');
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const path = './books.json';
 
@@ -43,6 +49,13 @@ const books = Array.from({ length: 50 }).map((_, index) => createBookData(index)
 jsonfile.writeFileSync(path, books, { spaces: 2 })
 
 app.get('/api/book', auth, (req, res) => {
+
+    // #swagger.description = "Get all books"
+    /* #swagger.responses[200] = {
+        description: "Array of all books"
+        schemas: { $ref: "#/definitions/Books" } 
+    }*/
+
     const books = jsonfile.readFileSync(path);
     
     return res.status(200).json({
@@ -126,6 +139,19 @@ app.post('/refresh-tokens', (req, res) => {
 })
 
 app.get('/api/book/:id', auth, (req, res) => {
+
+    // #swagger.description = "Get book by id"
+    /* #swagger.parameters['id'] = {
+        description: "Existing book id",
+        type: "integer",
+        required: true
+    }
+    /* #swagger.responses[200] = {
+        description: "Book with provided id"
+        schemas: { $ref: "#/definitions/Book" } 
+    }*/
+
+
     const books = jsonfile.readFileSync(path);
     const book = books.find(({ id }) => id == req.params.id)
     return res.status(200).json({
@@ -177,12 +203,31 @@ app.delete('/api/book/:id', auth, (req, res) => {
 })
 
 app.put('/api/book/:id', auth, (req, res) => {
+
+    // #swagger.description = 'Update existing todo'
+     /* #swagger.parameters['id'] = {
+        description: 'Existing book ID',
+        type: 'integer',
+        required: true
+    } */
+    /* #swagger.response[404] = {
+        description: 'Message not found',
+        schema: "#/definitions/Error"
+    }*/
+    /* #swagger.response[200] = {
+        description: 'edited book'
+        schema: "#/definitions/Book"
+    }*/
+
     const books = jsonfile.readFileSync(path);
     const bookIndex = books.findIndex(({ id }) => id == req.params.id);
 
 
     if(bookIndex === -1) {
-        res.send('book not found');
+        res.status(404).json({
+            success: false,
+            message: "book not found"
+        });
         return;
     }
 
@@ -200,8 +245,8 @@ app.put('/api/book/:id', auth, (req, res) => {
 
     jsonfile.writeFileSync(path, books, { spaces: 2 });
     return res.status(200).json({
-        status: "success",
-        message: "book has been edited"
+        success: true,
+        book: books[bookIndex]
     })
 
 })
