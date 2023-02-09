@@ -10,7 +10,10 @@ const express = require('express'),
      auth = require('./middleware/auth'),
      { refreshTokens } = require('./utils/refreshTokens'),
      { validateForm } = require('./utils/validateSignUpForm'),
-     bcrypt = require('bcrypt');
+     bcrypt = require('bcrypt'),
+     { openDb } = require('./db/index.js'),
+     sqlite3 = require('sqlite3');
+
 
      
 
@@ -32,31 +35,28 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const path = './books.json';
 
-const createBookData = function(index) {
+const createBookData = async function() {
     const genres = ["Фантастика", "Научная фантастика", "Приключения", "Романтика", "Драма", "Ужасы"]
-    return {
-        id: index + 1,
+    const book = {
         name: faker.music.songName(),
         giveDate: faker.date.past().toLocaleDateString("ru"),
         backDate: faker.date.future().toLocaleDateString("ru"),
         author: faker.name.fullName(),
         tags: faker.helpers.arrayElements(genres),
         year: faker.date.past(30).getFullYear()
-    }
+    };
+
+    const db = await openDb();
+    db.run("insert into BOOKS (name, giveDate, backDate, author, tags, year) VALUES (?, ?, ?, ?, ?, ?)", Object.values(book))
 }
 
-const books = Array.from({ length: 50 }).map((_, index) => createBookData(index));
-jsonfile.writeFileSync(path, books, { spaces: 2 })
 
-app.get('/api/book', auth, (req, res) => {
+app.get('/api/book', auth, async (req, res) => {
 
-    // #swagger.description = "Get all books"
-    /* #swagger.responses[200] = {
-        description: "Array of all books"
-        schemas: { $ref: "#/definitions/Books" } 
-    }*/
+    const db = await openDb();
+    const data = db.all('SELECT * FROM BOOKS');
 
-    const books = jsonfile.readFileSync(path);
+    console.log(data)
     
     return res.status(200).json({
         success: true,
@@ -105,7 +105,7 @@ app.post('/login', (req, res) => {
     })
 
     if(user) {
-        const accessToken = jwt.sign({username: loginUsername, refreshToken: user.refreshToken}, process.env.TOKEN_SECRET, {expiresIn: "10s"});
+        const accessToken = jwt.sign({username: loginUsername, refreshToken: user.refreshToken}, process.env.TOKEN_SECRET, {expiresIn: "600s"});
         const refreshToken = uuidv4()
 
         const users = jsonfile.readFileSync(path);
